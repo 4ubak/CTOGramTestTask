@@ -5,7 +5,7 @@ import (
 	"fmt"
   
 	_ "github.com/lib/pq"
-	"github.com/4ubak/CTOGramTestTask/internal/adapters/db/pg"
+	// "github.com/4ubak/CTOGramTestTask/internal/adapters/db/pg"
 	"github.com/4ubak/CTOGramTestTask/internal/domain/entities"
 )
 
