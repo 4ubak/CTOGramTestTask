@@ -1,8 +1,8 @@
 package pg
 
 import (
-	"database/sql"
-	"fmt"
+	// "database/sql"
+	// "fmt"
 
 	_ "github.com/lib/pq"
 )
