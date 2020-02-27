@@ -9,6 +9,7 @@ import (
 	// "github.com/4ubak/CTOGramTestTask/internal/adapters/db/pg"
 	entities "github.com/4ubak/CTOGramTestTask/internal/domain/entities"
 	_ "github.com/lib/pq"
+	test "github.com/4ubak/CTOGramTestTask/test/domain/entities" 
 )
 
 const (
@@ -22,20 +23,20 @@ const (
 var db *sql.DB
 
 //Execute connect to db
-func Execute() {
+func Execute() string {
 	var err error
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+"password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 	db, err = sql.Open("postgres", psqlInfo)
 	if err != nil {
-		log.Fatal(err)
+		return err.Error()
 	}
 	defer db.Close()
 	err = db.Ping()
 	if err != nil {
-		log.Fatal(err)
+		return err.Error()
 	}
-	fmt.Println("Successfully connected!")
-	Routing()
+	test.db = db
+	return "Successfully connected!"
 }
 
 //Routing ...
@@ -181,11 +182,11 @@ func UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := r.FormValue("Id")
+	id := r.FormValue("id")
 	owner := r.FormValue("Owner")
-	title := r.PostFormValue("Title")
-	startTime := r.PostFormValue("StartTime")
-	endTime := r.PostFormValue("EndTime")
+	title := r.FormValue("Title")
+	startTime := r.FormValue("StartTime")
+	endTime := r.FormValue("EndTime")
 
 	fmt.Printf("ID = %s, Owner = %s, Title = %s, StartTime = %s, EndTime = %s\n", id, owner, title, startTime, endTime)
 
