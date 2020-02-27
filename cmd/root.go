@@ -3,13 +3,13 @@ package cmd
 import (
 	"database/sql"
 	"fmt"
+
 	"log"
 	"net/http"
 
 	// "github.com/4ubak/CTOGramTestTask/internal/adapters/db/pg"
 	entities "github.com/4ubak/CTOGramTestTask/internal/domain/entities"
 	_ "github.com/lib/pq"
-	test "github.com/4ubak/CTOGramTestTask/test/domain/entities" 
 )
 
 const (
@@ -20,26 +20,42 @@ const (
 	dbname   = "calendar_demo"
 )
 
-var db *sql.DB
+//Db ...
+var Db *sql.DB
 
-//Execute connect to db
+//Execute testing
 func Execute() string {
 	var err error
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+"password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
-	db, err = sql.Open("postgres", psqlInfo)
+	Db, err = sql.Open("postgres", psqlInfo)
 	if err != nil {
 		return err.Error()
 	}
-	defer db.Close()
-	err = db.Ping()
+	err = Db.Ping()
 	if err != nil {
 		return err.Error()
 	}
-	test.db = db
 	return "Successfully connected!"
 }
 
-//Routing ...
+//Start ...
+func Start() {
+	var err error
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+"password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+	Db, err = sql.Open("postgres", psqlInfo)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer Db.Close()
+	err = Db.Ping()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Successfully connected!")
+	Routing()
+}
+
+// Routing ...
 func Routing() {
 	http.HandleFunc("/calendars", Show)
 	http.HandleFunc("/calendars/where", GetInfoByID)
@@ -49,14 +65,14 @@ func Routing() {
 	http.ListenAndServe(":3000", nil)
 }
 
-//Show ...
+// Show ...
 func Show(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, http.StatusText(405), 405)
 		return
 	}
 
-	rows, err := db.Query("SELECT * FROM calendar")
+	rows, err := Db.Query("SELECT * FROM calendar")
 	if err != nil {
 		http.Error(w, http.StatusText(500), 500)
 		return
@@ -95,7 +111,7 @@ func GetInfoByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row := db.QueryRow("SELECT * FROM calendar WHERE ID = $1", id)
+	row := Db.QueryRow("SELECT * FROM calendar WHERE ID = $1", id)
 
 	calendar := new(entities.Calendar)
 	err := row.Scan(&calendar.ID, &calendar.Owner, &calendar.Title, &calendar.StartTime, &calendar.EndTime)
@@ -129,7 +145,7 @@ func AddEventToCalendar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := db.Exec("INSERT INTO calendar(Id, Owner, Title, StartTime, EndTime) VALUES(DEFAULT, $1, $2, $3, $4)", owner, title, startTime, endTime)
+	result, err := Db.Exec("INSERT INTO calendar(Id, Owner, Title, StartTime, EndTime) VALUES(DEFAULT, $1, $2, $3, $4)", owner, title, startTime, endTime)
 
 	if err != nil {
 		fmt.Println("Cant insert Values")
@@ -156,7 +172,7 @@ func DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := r.FormValue("id")
-	result, err := db.Exec("DELETE FROM calendar WHERE Id=$1", id)
+	result, err := Db.Exec("DELETE FROM calendar WHERE Id=$1", id)
 
 	if err != nil {
 		fmt.Println("Cant Delete Values")
@@ -196,7 +212,7 @@ func UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := db.Exec("UPDATE calendar SET Owner=$2, Title=$3, StartTime=$4, EndTime=$5 WHERE Id=$1", id, owner, title, startTime, endTime)
+	result, err := Db.Exec("UPDATE calendar SET Owner=$2, Title=$3, StartTime=$4, EndTime=$5 WHERE Id=$1", id, owner, title, startTime, endTime)
 
 	if err != nil {
 		fmt.Println("Cant Update Values")
