@@ -1,128 +1,82 @@
 package pg
 
 import (
-	"database/sql"
-	"errors"
-	"fmt"
-
-	// constant "github.com/4ubak/CTOGramTestTask/internal/constant"
-	"log"
-
-	entities "github.com/4ubak/CTOGramTestTask/internal/domain/entities"
-	_ "github.com/lib/pq"
+	"context"
+	"github.com/4ubak/CTOGramTestTask/internal/errs"
+	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jmoiron/sqlx"
+	"time"
 )
 
-// Show all data from db
-func Show(db *sql.DB) ([]*entities.Calendar, error) {
-	rows, err := db.Query("SELECT * FROM calendar")
+const (
+	// ErrMsg is for ErrMsg
+	ErrMsg        = "PG-error"
+	dbWaitTimeout = 30 * time.Second
+)
+
+type PostgresDb struct {
+	Db *sqlx.DB
+}
+
+func NewPostgresDB(dsn string) (*PostgresDb, error) {
+	var err error
+	if dsn == "" {
+		return nil, errs.CantConnectToDb
+	}
+
+	res := &PostgresDb{}
+	connectionContext, connectionContextCancel := context.WithTimeout(context.Background(), dbWaitTimeout)
+	defer connectionContextCancel()
+
+	res.Db, err = res.dbWait(connectionContext, dsn)
 	if err != nil {
-		fmt.Println("Cant find Table")
 		return nil, err
 	}
-	defer rows.Close()
-	calendars := make([]*entities.Calendar, 0)
-	for rows.Next() {
-		calendar := new(entities.Calendar)
-		err := rows.Scan(&calendar.ID, &calendar.Owner, &calendar.Title, &calendar.StartTime, &calendar.EndTime)
-		if err != nil {
-			log.Fatal(err)
+
+	res.Db.SetMaxOpenConns(10)
+	res.Db.SetMaxIdleConns(5)
+	res.Db.SetConnMaxLifetime(10 * time.Minute)
+
+	return res, nil
+}
+
+func (pg *PostgresDb) dbWait(ctx context.Context, dsn string) (*sqlx.DB, error) {
+	var err error
+
+	var cnt uint32
+
+	var db *sqlx.DB
+
+	db, err = sqlx.Open("pgx", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		err = db.PingContext(ctx)
+		if err == nil || ctx.Err() != nil {
+			break
 		}
-		calendars = append(calendars, calendar)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-	return calendars, nil
-}
 
-//GetInfoByID ...
-func GetInfoByID(db *sql.DB, calendarSelect entities.CalendarSelect) (*entities.Calendar, error) {
-	id := calendarSelect.ID
-	row := db.QueryRow("SELECT * FROM calendar WHERE ID = $1", id)
-	calendar := new(entities.Calendar)
-	err := row.Scan(&calendar.ID, &calendar.Owner, &calendar.Title, &calendar.StartTime, &calendar.EndTime)
-	if err == sql.ErrNoRows {
-		return nil, err
-	} else if err != nil {
-		return nil, err
+		time.Sleep(time.Second)
 	}
-	return calendar, nil
-}
 
-// AddEventToCalendar ...
-func AddEventToCalendar(db *sql.DB, calendar entities.Calendar) ([]*entities.Calendar, error) {
-	if calendar.Owner == "" || calendar.Title == "" || calendar.StartTime == "" || calendar.EndTime == "" {
-		return nil, errors.New("Some values not entered")
-	}
-	result, err := db.Exec("INSERT INTO calendar(Id, Owner, Title, StartTime, EndTime) VALUES(DEFAULT, $1, $2, $3, $4)", calendar.Owner, calendar.Title, calendar.StartTime, calendar.EndTime)
-	if err != nil {
-		return nil, err
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("Calendar %s created successfully (%d row affected)\n", calendar.Owner, rowsAffected)
-
-	calendars, err := Show(db)
-	if err != nil {
-		return nil, err
-	} else {
-		return calendars, nil
-	}
-}
-
-//DeleteEvent ...
-func DeleteEvent(db *sql.DB, calendar entities.CalendarDelete) ([]*entities.Calendar, error) {
-	id := calendar.ID
-	result, err := db.Exec("DELETE FROM calendar WHERE Id=$1", id)
 	if err != nil {
 		return nil, err
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("Event %s successfully deleted (%d row affected)\n", calendar.ID, rowsAffected)
+	for {
+		err = db.GetContext(ctx, &cnt, `select count(*) from calendar`)
+		if err == nil || ctx.Err() != nil {
+			break
+		}
 
-	calendars, err := Show(db)
-	if err != nil {
-		return nil, err
-	} else {
-		return calendars, nil
-	}
-}
-
-// //UpdateEvent ...
-func UpdateEvent(db *sql.DB, calendar entities.Calendar) ([]*entities.Calendar, error) {
-	id := calendar.ID
-	owner := calendar.Owner
-	title := calendar.Title
-	startTime := calendar.StartTime
-	endTime := calendar.EndTime
-
-	fmt.Printf("ID = %s, Owner = %s, Title = %s, StartTime = %s, EndTime = %s\n", id, owner, title, startTime, endTime)
-
-	if owner == "" || title == "" || startTime == "" || endTime == "" {
-		return nil, errors.New("Some values not entered")
+		time.Sleep(time.Second)
 	}
 
-	result, err := db.Exec("UPDATE calendar SET Owner=$2, Title=$3, StartTime=$4, EndTime=$5 WHERE Id=$1", id, owner, title, startTime, endTime)
 	if err != nil {
 		return nil, err
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("Id %s was updated successfully (%d row affected)\n", id, rowsAffected)
-
-	calendars, err := Show(db)
-	if err != nil {
-		return nil, err
-	} else {
-		return calendars, nil
-	}
+	return db, nil
 }

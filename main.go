@@ -1,7 +1,9 @@
 package main
 
-import "github.com/4ubak/CTOGramTestTask/cmd"
+import (
+	"github.com/4ubak/CTOGramTestTask/cmd"
+)
 
 func main() {
-	cmd.Start()
+	cmd.Execute()
 }

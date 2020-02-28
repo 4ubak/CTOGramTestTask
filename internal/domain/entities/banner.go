@@ -9,6 +9,14 @@ type Calendar struct {
 	EndTime   string
 }
 
+//CalendarAdd
+type CalendarAdd struct {
+	Owner     string
+	Title     string
+	StartTime string
+	EndTime   string
+}
+
 //CalendarSelect ...
 type CalendarSelect struct {
 	ID int64
