@@ -8,7 +8,7 @@ import (
 type Db interface {
 	Show(ctx context.Context) ([]*entities.Calendar, error)
 	GetInfoByID(ctx context.Context, calendarSelect entities.CalendarSelect) (*entities.Calendar, error)
-	AddEventToCalendar(ctx context.Context, calendar entities.CalendarAdd) error
+	AddEventToCalendar(ctx context.Context, calendar entities.CalendarAdd) (*int64, error)
 	DeleteEvent(ctx context.Context, calendar entities.CalendarDelete) error
-	UpdateEvent(ctx context.Context, calendar entities.Calendar) error
+	UpdateEvent(ctx context.Context, calendar entities.CalendarUpdate) error
 }

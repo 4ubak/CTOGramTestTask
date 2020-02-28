@@ -14,13 +14,13 @@ func (c *St) GetInfoByID(ctx context.Context,calendarSelect entities.CalendarSel
 	return c.db.GetInfoByID(ctx, calendarSelect)
 }
 
-func (c *St) AddEventToCalendar(ctx context.Context, calendar entities.CalendarAdd) error {
+func (c *St) AddEventToCalendar(ctx context.Context, calendar entities.CalendarAdd) (*int64, error) {
 	owner := calendar.Owner
 	title := calendar.Title
 	startTime := calendar.StartTime
 	endTime := calendar.EndTime
 	if owner == "" || title == "" || startTime == "" || endTime == "" {
-		return errs.ValuesNotFilled
+		return nil, errs.ValuesNotFilled
 	}
 	return c.db.AddEventToCalendar(ctx, calendar)
 }
@@ -29,7 +29,7 @@ func (c *St) DeleteEvent(ctx context.Context, calendar entities.CalendarDelete) 
 	return c.db.DeleteEvent(ctx, calendar)
 }
 
-func (c *St) UpdateEvent(ctx context.Context, calendar entities.Calendar) error {
+func (c *St) UpdateEvent(ctx context.Context, calendar entities.CalendarUpdate) error {
 	owner := calendar.Owner
 	title := calendar.Title
 	startTime := calendar.StartTime

@@ -16,4 +16,6 @@ const (
 	CantScanValues = Err("CantScanValues")
 	ValuesNotFilled = Err("ValuesNotFilled")
 	CantConnectToDb = Err("CantConnectToDb")
+	CantDeleteThisID = Err("CantDeleteThisID")
+	CantUpdate = Err("CantUpdate")
 )
