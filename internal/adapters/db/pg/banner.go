@@ -9,7 +9,7 @@ import (
 )
 
 // Show all data from db
-func (pg *PostgresDb)Show(ctx context.Context,) ([]*entities.Calendar, error) {
+func (pg *PostgresDb)Show(ctx context.Context) ([]*entities.Calendar, error) {
 	rows, err := pg.Db.QueryxContext(ctx,"SELECT * FROM calendar")
 	if err != nil {
 		return nil, errs.TableNotExist
